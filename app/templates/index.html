@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Document Query System</h1>
+        
+        <div class="upload-section">
+            <h2>Upload PDF</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="pdfFile" accept=".pdf" required>
+                <button type="submit">Upload</button>
+            </form>
+            <div id="uploadStatus"></div>
+        </div>
+
+        <div class="query-section">
+            <h2>Query Documents</h2>
+            <textarea id="queryInput" placeholder="Enter your question..." rows="3"></textarea>
+            <button onclick="queryDocuments()">Ask Question</button>
+            <div id="queryResponse" class="response-box"></div>
+        </div>
+
+        <div class="database-section">
+            <h2>Database Management</h2>
+            <button onclick="clearDatabase()" class="danger-button">Clear Database</button>
+        </div>
+    </div>
+
+    <script>
+        async function uploadPDF(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('pdfFile');
+            const uploadStatus = document.getElementById('uploadStatus');
+            
+            if (!fileInput.files.length) {
+                uploadStatus.textContent = 'Please select a file';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                uploadStatus.textContent = 'Uploading...';
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                uploadStatus.textContent = result.message;
+            } catch (error) {
+                uploadStatus.textContent = 'Upload failed: ' + error.message;
+            }
+        }
+
+        async function queryDocuments() {
+            const queryInput = document.getElementById('queryInput');
+            const queryResponse = document.getElementById('queryResponse');
+            
+            if (!queryInput.value.trim()) {
+                queryResponse.textContent = 'Please enter a question';
+                return;
+            }
+
+            try {
+                queryResponse.textContent = 'Processing query...';
+                const response = await fetch('/query?query=' + encodeURIComponent(queryInput.value), {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                queryResponse.textContent = result.response;
+            } catch (error) {
+                console.error('Query error:', error);
+                queryResponse.textContent = 'Query failed: ' + error.message;
+            }
+        }
+
+        async function clearDatabase() {
+            if (!confirm('Are you sure you want to clear the database? This cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/clear', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                console.error('Clear database error:', error);
+                alert('Failed to clear database: ' + error.message);
+            }
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', uploadPDF);
+    </script>
+</body>
+</html>

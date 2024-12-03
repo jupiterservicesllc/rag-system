@@ -1,0 +1,23 @@
+```text
+# Virtual Environment
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment Variables
+.env
+
+# Database
+db/
+*.db
+
+# Models
+models/*.gguf
+
+# Temporary files
+temp/
+```
